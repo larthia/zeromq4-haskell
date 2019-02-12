@@ -762,7 +762,7 @@ setXPubVerbose :: Bool -> Socket XPub -> IO ()
 setXPubVerbose x s = setIntOpt s B.xpubVerbose (bool2cint x)
 
 -- | <http://api.zeromq.org/4-0:zmq-getsockopt zmq_getsockopt ZMQ_ZAP_DOMAIN>.
-setZapDomain :: Restricted (N0, N254) SB.ByteString -> Socket a -> IO ()
+setZapDomain :: Restricted (N1, N254) SB.ByteString -> Socket a -> IO ()
 setZapDomain x s = setByteStringOpt s B.zapDomain (rvalue x)
 
 -- | Bind the socket to the given address
