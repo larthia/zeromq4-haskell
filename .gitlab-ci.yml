@@ -11,11 +11,19 @@ cache:
 
 before_script:
   - apt-get update
-  - apt-get install -y libstdc++-4.9-dev g++ libzmq3-dev pkg-config xz-utils make
+  - apt-get install -y libstdc++-6-dev g++ libzmq3-dev pkg-config xz-utils make
+
+test:8.6:
+  script:
+    - stack --no-terminal --resolver lts-13 --install-ghc test
+
+test:8.4:
+  script:
+    - stack --no-terminal --resolver lts-12 --install-ghc test
 
 test:8.2:
   script:
-    - stack --no-terminal --resolver nightly-2017-12-09 --install-ghc test
+    - stack --no-terminal --resolver lts-11 --install-ghc test
 
 test:8.0:
   script:

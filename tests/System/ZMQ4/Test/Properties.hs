@@ -185,7 +185,7 @@ data SetOpt =
   | SendBuf         (Restricted (N0, Int32) Int)
   | SendHighWM      (Restricted (N0, Int32) Int)
   | SendTimeout     (Restricted (Nneg1, Int32) Int)
-  | ZapDomain       (Restricted (N0, N254) ByteString)
+  | ZapDomain       (Restricted (N1, N254) ByteString)
   | PlainPassword   (Restricted (N1, N254) ByteString)
   | PlainUsername   (Restricted (N1, N254) ByteString)
   deriving Show
@@ -215,7 +215,7 @@ instance Arbitrary SetOpt where
       , SendHighWM      . toR0     <$> (arbitrary :: Gen Int32) `suchThat` (>=  0)
       , SendTimeout     . toRneg1  <$> (arbitrary :: Gen Int32) `suchThat` (>= -1)
       , MaxMessageSize  . toRneg1' <$> (arbitrary :: Gen Int64) `suchThat` (>= -1)
-      , ZapDomain       . fromJust . toRestricted <$> (unbytes <$> arbitrary) `suchThat` (\s -> SB.length s >= 0 && SB.length s < 255)
+      , ZapDomain       . fromJust . toRestricted <$> (unbytes <$> arbitrary) `suchThat` (\s -> SB.length s >  0 && SB.length s < 255)
       , PlainPassword   . fromJust . toRestricted <$> (unbytes <$> arbitrary) `suchThat` (\s -> SB.length s >  0 && SB.length s < 255)
       , PlainUsername   . fromJust . toRestricted <$> (unbytes <$> arbitrary) `suchThat` (\s -> SB.length s >  0 && SB.length s < 255)
       , Identity        . fromJust . toRestricted <$> (unbytes <$> arbitrary) `suchThat` (\s -> SB.length s >  0 && SB.length s < 255)
