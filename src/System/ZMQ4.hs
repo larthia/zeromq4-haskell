@@ -83,6 +83,7 @@ module System.ZMQ4
   , send'
   , sendMulti
   , receive
+  , receive'
   , receiveMulti
   , version
   , monitor
@@ -138,6 +139,11 @@ module System.ZMQ4
   , System.ZMQ4.tcpKeepAliveIdle
   , System.ZMQ4.tcpKeepAliveInterval
   , System.ZMQ4.zapDomain
+
+  , propertyRoutingID
+  , propertySocketType
+  , propertyUserId
+  , propertyPeerAddress
 
     -- * Socket Options (Write)
   , setAffinity
@@ -857,6 +863,37 @@ receive sock = bracket messageInit messageClose $ \m ->
     size     <- c_zmq_msg_size (msgPtr m)
     SB.packCStringLen (data_ptr, fromIntegral size)
 
+-- | Receive a 'ByteString' from socket, obtaing the values of message properties specified.
+-- Valid properties are: propertyRoutingID, propertySocketType, propertyUserId, propertyPeerAddress
+--
+-- (cf. <http://api.zeromq.org/4-0:zmq-recvmsg zmq_recvmsg>).
+--
+-- /Note/: This function always calls @zmq_recvmsg@ in a non-blocking way,
+-- i.e. there is no need to provide the @ZMQ_DONTWAIT@ flag as this is used
+-- by default. Still 'receive' is blocking the thread as long as no data
+-- is available using GHC's 'threadWaitRead'.
+
+receive' :: Receiver a => Socket a -> [SB.ByteString] -> IO (SB.ByteString, [Maybe SB.ByteString])
+receive' sock ps = bracket messageInit messageClose $ \m ->
+  onSocket "receive" sock $ \s -> do
+    retry "receive" (waitRead sock) $
+#ifdef mingw32_HOST_OS
+          c_zmq_recvmsg s (msgPtr m) 0
+#else
+          c_zmq_recvmsg s (msgPtr m) (flagVal dontWait)
+#endif
+    data_ptr <- c_zmq_msg_data (msgPtr m)
+    size     <- c_zmq_msg_size (msgPtr m)
+    values   <- forM ps $ \p -> do
+                  SB.useAsCString p $ \cstr -> do
+                    v <- c_zmq_msg_gets (msgPtr m) cstr
+                    if v == nullPtr
+                              then return Nothing
+                              else Just <$> SB.packCString v
+    msg <- SB.packCStringLen (data_ptr, fromIntegral size)
+    return (msg, values)
+
+
 -- | Receive a multi-part message.
 -- This function collects all message parts send via 'sendMulti'.
 receiveMulti :: Receiver a => Socket a -> IO [SB.ByteString]
@@ -1009,4 +1046,3 @@ curveKeyPair = liftIO $
         maybe (fail errmsg) return ((,) <$> public <*> private)
       where
         errmsg = "curveKeyPair: invalid key-lengths produced"
-

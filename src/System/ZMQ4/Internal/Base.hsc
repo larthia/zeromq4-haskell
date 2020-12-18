@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE ForeignFunctionInterface   #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
 
 -- | /Warning/: This is an internal module and subject
 -- to change without notice.
@@ -11,6 +12,7 @@ import Foreign.C.Types
 import Foreign.C.String
 import Control.Applicative
 import Prelude
+import qualified Data.ByteString as SB
 
 #include <zmq.h>
 
@@ -180,6 +182,12 @@ newtype ZMQEventType = ZMQEventType
   , monitorStopped = ZMQ_EVENT_MONITOR_STOPPED
 }
 
+propertyRoutingID, propertySocketType, propertyUserId, propertyPeerAddress  :: SB.ByteString
+propertyRoutingID   = "Routing-Id"
+propertySocketType  = "Socket-Type"
+propertyUserId      = "User-Id"
+propertyPeerAddress = "Peer-Address"
+
 -----------------------------------------------------------------------------
 -- Event
 
@@ -306,6 +314,15 @@ foreign import ccall unsafe "zmq.h zmq_msg_get"
 foreign import ccall unsafe "zmq.h zmq_msg_set"
     c_zmq_msg_set :: ZMQMsgPtr -> CInt -> CInt -> IO CInt
 
+foreign import ccall unsafe "zmq.h zmq_msg_gets"
+    c_zmq_msg_gets :: ZMQMsgPtr -> Ptr CChar -> IO (Ptr CChar)
+
+foreign import ccall unsafe "zmq.h zmq_msg_set_routing_id"
+    c_zmq_msg_set_routing_id :: ZMQMsgPtr -> CUInt -> IO CInt
+
+foreign import ccall unsafe "zmq.h zmq_msg_routing_id"
+    c_zmq_msg_routing_id :: ZMQMsgPtr -> IO CUInt
+
 -- socket
 
 foreign import ccall unsafe "zmq.h zmq_socket"
@@ -387,4 +404,3 @@ foreign import ccall unsafe "zmq.h zmq_z85_decode"
 
 foreign import ccall unsafe "zmq.h zmq_curve_keypair"
     c_zmq_curve_keypair :: CString -> CString -> IO CInt
-
