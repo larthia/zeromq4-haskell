@@ -317,11 +317,11 @@ foreign import ccall unsafe "zmq.h zmq_msg_set"
 foreign import ccall unsafe "zmq.h zmq_msg_gets"
     c_zmq_msg_gets :: ZMQMsgPtr -> Ptr CChar -> IO (Ptr CChar)
 
-foreign import ccall unsafe "zmq.h zmq_msg_set_routing_id"
-    c_zmq_msg_set_routing_id :: ZMQMsgPtr -> CUInt -> IO CInt
-
-foreign import ccall unsafe "zmq.h zmq_msg_routing_id"
-    c_zmq_msg_routing_id :: ZMQMsgPtr -> IO CUInt
+-- foreign import ccall unsafe "zmq.h zmq_msg_set_routing_id"
+--     c_zmq_msg_set_routing_id :: ZMQMsgPtr -> CUInt -> IO CInt
+--
+-- foreign import ccall unsafe "zmq.h zmq_msg_routing_id"
+--     c_zmq_msg_routing_id :: ZMQMsgPtr -> IO CUInt
 
 -- socket
 
