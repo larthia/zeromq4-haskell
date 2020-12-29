@@ -53,6 +53,7 @@ module System.ZMQ4.Internal
     , fromSwitch
     , events2cint
     , eventMessage
+    , prettyEventMsg
     , protocolError
 
     , toMechanism
@@ -82,6 +83,7 @@ import System.ZMQ4.Internal.Error
 import qualified Data.ByteString        as SB
 import qualified Data.ByteString.Lazy   as LB
 import qualified Data.ByteString.Unsafe as UB
+import System.IO.Unsafe ( unsafePerformIO )
 
 type Timeout = Int64
 type Size    = Word
@@ -161,8 +163,26 @@ data EventMsg =
   | HandShakeFailed         !SB.ByteString !Int
   | HandShakeFailedProtocol !SB.ByteString ProtocolError
   | HandShakeFailedAuth     !SB.ByteString !Int
-  | UnknownEventMsg         !SB.ByteString !Int
+  | UnknownEventMsg         !SB.ByteString
   deriving (Eq, Show)
+
+prettyEventMsg :: EventMsg -> String
+prettyEventMsg (Connected               msg fd) = show msg <> ": connected (fd " <> show fd <> ")"
+prettyEventMsg (ConnectDelayed          msg   ) = show msg <> ": connection delayed"
+prettyEventMsg (ConnectRetried          msg e)  = show msg <> ": connection retried (" <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
+prettyEventMsg (Listening               msg fd) = show msg <> ": listening (fd " <> show fd <> ")"
+prettyEventMsg (BindFailed              msg e)  = show msg <> ": bind failed ("  <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
+prettyEventMsg (Accepted                msg fd) = show msg <> ": connection accepted (fd " <> show fd <> ")"
+prettyEventMsg (AcceptFailed            msg e)  = show msg <> ": accept failed (" <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
+prettyEventMsg (Closed                  msg fd) = show msg <> ": closed (fd " <> show fd <> ")"
+prettyEventMsg (CloseFailed             msg e)  = show msg <> ": close failed (" <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
+prettyEventMsg (Disconnected            msg fd) = show msg <> ": disconnected (" <> show fd <> ")"
+prettyEventMsg (MonitorStopped          msg e)  = show msg <> ": monitor stopped (" <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
+prettyEventMsg (HandShakeSucceeded      msg)    = show msg <> ": handshake succeeded"
+prettyEventMsg (HandShakeFailed         msg e)  = show msg <> ": handshake failed (error: " <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
+prettyEventMsg (HandShakeFailedProtocol msg e)  = show msg <> ": handshake failed: " <> show e
+prettyEventMsg (HandShakeFailedAuth     msg e)  = show msg <> ": handshake filled authentication (" <> show e <> ")"
+prettyEventMsg (UnknownEventMsg         msg)    = show msg
 
 data SecurityMechanism
   = Null
@@ -425,7 +445,7 @@ eventMessage str (ZMQEvent e v)
     | e == handshakeSucceeded      = HandShakeSucceeded str
     | e == handshakeFailedProtocol = HandShakeFailedProtocol str (protocolError (ZMQProtocolError $ fromIntegral v))
     | e == handshakeFailedAuth     = HandShakeFailedAuth str (fromIntegral $ v)
-    | otherwise                    = UnknownEventMsg str (fromIntegral v)
+    | otherwise                    = UnknownEventMsg str
 
 
 protocolError :: ZMQProtocolError  -> ProtocolError
