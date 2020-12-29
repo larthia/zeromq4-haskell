@@ -186,6 +186,33 @@ newtype ZMQEventType = ZMQEventType
   , handshakeFailedAuth  = ZMQ_EVENT_HANDSHAKE_FAILED_AUTH
 }
 
+newtype ZMQProtocolError = ZMQProtocolError
+  { errorVal :: Word32
+  } deriving (Eq, Ord, Show, Storable)
+
+#{enum ZMQProtocolError, ZMQProtocolError
+  , errorZmtpUnspecified                  = ZMQ_PROTOCOL_ERROR_ZMTP_UNSPECIFIED
+  , errorZmtpUnexpectedCommand            = ZMQ_PROTOCOL_ERROR_ZMTP_UNEXPECTED_COMMAND
+  , errorZmtpInvalidSequence              = ZMQ_PROTOCOL_ERROR_ZMTP_INVALID_SEQUENCE
+  , errorZmtpKeyExchange                  = ZMQ_PROTOCOL_ERROR_ZMTP_KEY_EXCHANGE
+  , errorZmtpMalformedCommandUnspecified  = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_UNSPECIFIED
+  , errorZmtpMalformedCommandMessage      = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_MESSAGE
+  , errorZmtpMalformedCommandHello        = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_HELLO
+  , errorZmtpMalformedCommandInitiate     = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_INITIATE
+  , errorZmtpMalformedCommandError        = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_ERROR
+  , errorZmtpMalformedCommandReady        = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_READY
+  , errorZmtpMalformedCommandWelcome      = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_WELCOME
+  , errorZmtpInvalidMetadata              = ZMQ_PROTOCOL_ERROR_ZMTP_INVALID_METADATA
+  , errorZmtpCryptographic                = ZMQ_PROTOCOL_ERROR_ZMTP_CRYPTOGRAPHIC
+  , errorZmtpMechanism_mismatch           = ZMQ_PROTOCOL_ERROR_ZMTP_MECHANISM_MISMATCH
+  , errorZapUnspecified                   = ZMQ_PROTOCOL_ERROR_ZAP_UNSPECIFIED
+  , errorZapMalformedReply                = ZMQ_PROTOCOL_ERROR_ZAP_MALFORMED_REPLY
+  , errorZapBadRequestId                  = ZMQ_PROTOCOL_ERROR_ZAP_BAD_REQUEST_ID
+  , errorZapBadVersion                    = ZMQ_PROTOCOL_ERROR_ZAP_BAD_VERSION
+  , errorZapInvalidStatusCode             = ZMQ_PROTOCOL_ERROR_ZAP_INVALID_STATUS_CODE
+  , errorZapInvalidMetadata               = ZMQ_PROTOCOL_ERROR_ZAP_INVALID_METADATA
+}
+
 propertyRoutingID, propertySocketType, propertyUserId, propertyPeerAddress  :: SB.ByteString
 propertyRoutingID   = "Routing-Id"
 propertySocketType  = "Socket-Type"
