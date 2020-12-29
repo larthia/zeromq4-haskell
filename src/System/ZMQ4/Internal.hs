@@ -53,6 +53,7 @@ module System.ZMQ4.Internal
     , fromSwitch
     , events2cint
     , eventMessage
+    , protocolError
 
     , toMechanism
     , fromMechanism
@@ -118,6 +119,31 @@ data EventType =
   | AllEvents
   deriving (Eq, Ord, Show)
 
+-- | Protocol Error types.
+data ProtocolError =
+     ErrorZmtpUnspecified
+   | ErrorZmtpUnexpectedCommand
+   | ErrorZmtpInvalidSequence
+   | ErrorZmtpKeyExchange
+   | ErrorZmtpMalformedCommandUnspecified
+   | ErrorZmtpMalformedCommandMessage
+   | ErrorZmtpMalformedCommandHello
+   | ErrorZmtpMalformedCommandInitiate
+   | ErrorZmtpMalformedCommandError
+   | ErrorZmtpMalformedCommandReady
+   | ErrorZmtpMalformedCommandWelcome
+   | ErrorZmtpInvalidMetadata
+   | ErrorZmtpCryptographic
+   | ErrorZmtpMechanism_mismatch
+   | ErrorZapUnspecified
+   | ErrorZapMalformedReply
+   | ErrorZapBadRequestId
+   | ErrorZapBadVersion
+   | ErrorZapInvalidStatusCode
+   | ErrorZapInvalidMetadata
+   | ErrorUnknown
+    deriving (Eq, Ord, Show)
+
 -- | Event Message to receive when monitoring socket events.
 data EventMsg =
     Connected               !SB.ByteString !Fd
@@ -131,10 +157,10 @@ data EventMsg =
   | CloseFailed             !SB.ByteString !Int
   | Disconnected            !SB.ByteString !Fd
   | MonitorStopped          !SB.ByteString !Int
-  | HandShakeSucceeded      !SB.ByteString !Fd
-  | HandShakeFailed         !SB.ByteString !Fd
-  | HandShakeFailedProtocol !SB.ByteString !Fd
-  | HandShakeFailedAuth     !SB.ByteString !Fd
+  | HandShakeSucceeded      !SB.ByteString
+  | HandShakeFailed         !SB.ByteString !Int
+  | HandShakeFailedProtocol !SB.ByteString ProtocolError
+  | HandShakeFailedAuth     !SB.ByteString !Int
   | UnknownEventMsg         !SB.ByteString !Int
   deriving (Eq, Show)
 
@@ -395,8 +421,33 @@ eventMessage str (ZMQEvent e v)
     | e == closeFailed             = CloseFailed    str (fromIntegral $ v)
     | e == disconnected            = Disconnected   str (fromIntegral $ v)
     | e == monitorStopped          = MonitorStopped str (fromIntegral $ v)
-    | e == handshakeFailed         = HandShakeFailed str (Fd . fromIntegral $ v)
-    | e == handshakeSucceeded      = HandShakeSucceeded str (Fd . fromIntegral $ v)
-    | e == handshakeFailedProtocol = HandShakeFailedProtocol str (Fd . fromIntegral $ v)
-    | e == handshakeFailedAuth     = HandShakeFailedAuth str (Fd . fromIntegral $ v)
+    | e == handshakeFailed         = HandShakeFailed str (fromIntegral $ v)
+    | e == handshakeSucceeded      = HandShakeSucceeded str
+    | e == handshakeFailedProtocol = HandShakeFailedProtocol str (protocolError (ZMQProtocolError $ fromIntegral v))
+    | e == handshakeFailedAuth     = HandShakeFailedAuth str (fromIntegral $ v)
     | otherwise                    = UnknownEventMsg str (fromIntegral v)
+
+
+protocolError :: ZMQProtocolError  -> ProtocolError
+protocolError e
+    | e == errorZmtpUnspecified                 =  ErrorZmtpUnspecified
+    | e == errorZmtpUnexpectedCommand           =  ErrorZmtpUnexpectedCommand
+    | e == errorZmtpInvalidSequence             =  ErrorZmtpInvalidSequence
+    | e == errorZmtpKeyExchange                 =  ErrorZmtpKeyExchange
+    | e == errorZmtpMalformedCommandUnspecified =  ErrorZmtpMalformedCommandUnspecified
+    | e == errorZmtpMalformedCommandMessage     =  ErrorZmtpMalformedCommandMessage
+    | e == errorZmtpMalformedCommandHello       =  ErrorZmtpMalformedCommandHello
+    | e == errorZmtpMalformedCommandInitiate    =  ErrorZmtpMalformedCommandInitiate
+    | e == errorZmtpMalformedCommandError       =  ErrorZmtpMalformedCommandError
+    | e == errorZmtpMalformedCommandReady       =  ErrorZmtpMalformedCommandReady
+    | e == errorZmtpMalformedCommandWelcome     =  ErrorZmtpMalformedCommandWelcome
+    | e == errorZmtpInvalidMetadata             =  ErrorZmtpInvalidMetadata
+    | e == errorZmtpCryptographic               =  ErrorZmtpCryptographic
+    | e == errorZmtpMechanism_mismatch          =  ErrorZmtpMechanism_mismatch
+    | e == errorZapUnspecified                  =  ErrorZapUnspecified
+    | e == errorZapMalformedReply               =  ErrorZapMalformedReply
+    | e == errorZapBadRequestId                 =  ErrorZapBadRequestId
+    | e == errorZapBadVersion                   =  ErrorZapBadVersion
+    | e == errorZapInvalidStatusCode            =  ErrorZapInvalidStatusCode
+    | e == errorZapInvalidMetadata              =  ErrorZapInvalidMetadata
+    | otherwise                                 =  ErrorUnknown
