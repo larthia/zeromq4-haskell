@@ -180,6 +180,10 @@ newtype ZMQEventType = ZMQEventType
   , disconnected   = ZMQ_EVENT_DISCONNECTED
   , allEvents      = ZMQ_EVENT_ALL
   , monitorStopped = ZMQ_EVENT_MONITOR_STOPPED
+  , handshakeFailed = ZMQ_EVENT_HANDSHAKE_FAILED_NO_DETAIL
+  , handshakeSucceeded = ZMQ_EVENT_HANDSHAKE_SUCCEEDED
+  , handshakeFailedProtocol = ZMQ_EVENT_HANDSHAKE_FAILED_PROTOCOL
+  , handshakeFailedAuth  = ZMQ_EVENT_HANDSHAKE_FAILED_AUTH
 }
 
 propertyRoutingID, propertySocketType, propertyUserId, propertyPeerAddress  :: SB.ByteString

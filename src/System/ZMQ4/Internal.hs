@@ -111,22 +111,31 @@ data EventType =
   | CloseFailedEvent
   | DisconnectedEvent
   | MonitorStoppedEvent
+  | HandshakeFailed
+  | HandshakeSucceeded
+  | HandshakeFailedProtocol
+  | HandshakeFailedAuth
   | AllEvents
   deriving (Eq, Ord, Show)
 
 -- | Event Message to receive when monitoring socket events.
 data EventMsg =
-    Connected      !SB.ByteString !Fd
-  | ConnectDelayed !SB.ByteString
-  | ConnectRetried !SB.ByteString !Int
-  | Listening      !SB.ByteString !Fd
-  | BindFailed     !SB.ByteString !Int
-  | Accepted       !SB.ByteString !Fd
-  | AcceptFailed   !SB.ByteString !Int
-  | Closed         !SB.ByteString !Fd
-  | CloseFailed    !SB.ByteString !Int
-  | Disconnected   !SB.ByteString !Fd
-  | MonitorStopped !SB.ByteString !Int
+    Connected               !SB.ByteString !Fd
+  | ConnectDelayed          !SB.ByteString
+  | ConnectRetried          !SB.ByteString !Int
+  | Listening               !SB.ByteString !Fd
+  | BindFailed              !SB.ByteString !Int
+  | Accepted                !SB.ByteString !Fd
+  | AcceptFailed            !SB.ByteString !Int
+  | Closed                  !SB.ByteString !Fd
+  | CloseFailed             !SB.ByteString !Int
+  | Disconnected            !SB.ByteString !Fd
+  | MonitorStopped          !SB.ByteString !Int
+  | HandShakeSucceeded      !SB.ByteString !Fd
+  | HandShakeFailed         !SB.ByteString !Fd
+  | HandShakeFailedProtocol !SB.ByteString !Fd
+  | HandShakeFailedAuth     !SB.ByteString !Fd
+  | UnknownEventMsg         !SB.ByteString !Int
   deriving (Eq, Show)
 
 data SecurityMechanism
@@ -353,6 +362,10 @@ toZMQEventType ClosedEvent         = closed
 toZMQEventType CloseFailedEvent    = closeFailed
 toZMQEventType DisconnectedEvent   = disconnected
 toZMQEventType MonitorStoppedEvent = monitorStopped
+toZMQEventType HandshakeFailed         = handshakeFailed
+toZMQEventType HandshakeSucceeded      = handshakeSucceeded
+toZMQEventType HandshakeFailedProtocol = handshakeFailedProtocol
+toZMQEventType HandshakeFailedAuth     = handshakeFailedAuth
 
 toMechanism :: SecurityMechanism -> ZMQSecMechanism
 toMechanism Null  = secNull
@@ -371,15 +384,19 @@ events2cint = fromIntegral . foldr ((.|.) . eventTypeVal . toZMQEventType) 0
 
 eventMessage :: SB.ByteString -> ZMQEvent -> EventMsg
 eventMessage str (ZMQEvent e v)
-    | e == connected      = Connected      str (Fd . fromIntegral $ v)
-    | e == connectDelayed = ConnectDelayed str
-    | e == connectRetried = ConnectRetried str (fromIntegral $ v)
-    | e == listening      = Listening      str (Fd . fromIntegral $ v)
-    | e == bindFailed     = BindFailed     str (fromIntegral $ v)
-    | e == accepted       = Accepted       str (Fd . fromIntegral $ v)
-    | e == acceptFailed   = AcceptFailed   str (fromIntegral $ v)
-    | e == closed         = Closed         str (Fd . fromIntegral $ v)
-    | e == closeFailed    = CloseFailed    str (fromIntegral $ v)
-    | e == disconnected   = Disconnected   str (fromIntegral $ v)
-    | e == monitorStopped = MonitorStopped str (fromIntegral $ v)
-    | otherwise           = error $ "unknown event type: " ++ show e
+    | e == connected               = Connected      str (Fd . fromIntegral $ v)
+    | e == connectDelayed          = ConnectDelayed str
+    | e == connectRetried          = ConnectRetried str (fromIntegral $ v)
+    | e == listening               = Listening      str (Fd . fromIntegral $ v)
+    | e == bindFailed              = BindFailed     str (fromIntegral $ v)
+    | e == accepted                = Accepted       str (Fd . fromIntegral $ v)
+    | e == acceptFailed            = AcceptFailed   str (fromIntegral $ v)
+    | e == closed                  = Closed         str (Fd . fromIntegral $ v)
+    | e == closeFailed             = CloseFailed    str (fromIntegral $ v)
+    | e == disconnected            = Disconnected   str (fromIntegral $ v)
+    | e == monitorStopped          = MonitorStopped str (fromIntegral $ v)
+    | e == handshakeFailed         = HandShakeFailed str (Fd . fromIntegral $ v)
+    | e == handshakeSucceeded      = HandShakeSucceeded str (Fd . fromIntegral $ v)
+    | e == handshakeFailedProtocol = HandShakeFailedProtocol str (Fd . fromIntegral $ v)
+    | e == handshakeFailedAuth     = HandShakeFailedAuth str (Fd . fromIntegral $ v)
+    | otherwise                    = UnknownEventMsg str (fromIntegral v)
