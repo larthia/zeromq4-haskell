@@ -134,7 +134,7 @@ data ProtocolError =
    | ErrorZmtpMalformedCommandWelcome
    | ErrorZmtpInvalidMetadata
    | ErrorZmtpCryptographic
-   | ErrorZmtpMechanism_mismatch
+   | ErrorZmtpMechanismMismatch
    | ErrorZapUnspecified
    | ErrorZapMalformedReply
    | ErrorZapBadRequestId
@@ -443,7 +443,7 @@ protocolError e
     | e == errorZmtpMalformedCommandWelcome     =  ErrorZmtpMalformedCommandWelcome
     | e == errorZmtpInvalidMetadata             =  ErrorZmtpInvalidMetadata
     | e == errorZmtpCryptographic               =  ErrorZmtpCryptographic
-    | e == errorZmtpMechanism_mismatch          =  ErrorZmtpMechanism_mismatch
+    | e == errorZmtpMechanismMismatch           =  ErrorZmtpMechanismMismatch
     | e == errorZapUnspecified                  =  ErrorZapUnspecified
     | e == errorZapMalformedReply               =  ErrorZapMalformedReply
     | e == errorZapBadRequestId                 =  ErrorZapBadRequestId
