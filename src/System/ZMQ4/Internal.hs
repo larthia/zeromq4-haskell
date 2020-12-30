@@ -169,7 +169,7 @@ data EventMsg =
 prettyEventMsg :: EventMsg -> String
 prettyEventMsg (Connected               msg fd) = show msg <> ": connected (fd " <> show fd <> ")"
 prettyEventMsg (ConnectDelayed          msg   ) = show msg <> ": connection delayed"
-prettyEventMsg (ConnectRetried          msg e)  = show msg <> ": connection retried (" <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
+prettyEventMsg (ConnectRetried          msg e)  = show msg <> ": connection retried (" <> show e <> ")"
 prettyEventMsg (Listening               msg fd) = show msg <> ": listening (fd " <> show fd <> ")"
 prettyEventMsg (BindFailed              msg e)  = show msg <> ": bind failed ("  <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
 prettyEventMsg (Accepted                msg fd) = show msg <> ": connection accepted (fd " <> show fd <> ")"
