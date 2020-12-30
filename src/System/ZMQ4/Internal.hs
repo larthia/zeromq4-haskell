@@ -196,7 +196,7 @@ showPeerAddr :: Fd -> String
 showPeerAddr fd = unsafePerformIO $ do
    res :: Either SomeException NS.SockAddr <- try (dupFd (fromIntegral fd) >>= NS.mkSocket >>= NS.getPeerName)
    case res of
-       (Right a) -> return $ show a
+       (Right a) -> return $ "fd " <> show fd <> ": " <> show a
        (Left  _) -> return $ "fd " <> show fd
 {-# NOINLINE  showPeerAddr #-}
 
