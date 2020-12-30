@@ -186,7 +186,7 @@ prettyEventMsg (MonitorStopped          msg _)  = show msg <> ": monitor stopped
 prettyEventMsg (HandShakeFailed         msg e)  = show msg <> ": handshake failed (error: " <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
 prettyEventMsg (HandShakeSucceeded      msg)    = show msg <> ": handshake succeeded"
 prettyEventMsg (HandShakeFailedProtocol msg e)  = show msg <> ": handshake failed: " <> show e
-prettyEventMsg (HandShakeFailedAuth     msg e)  = show msg <> ": handshake filled authentication (" <> show e <> ")"
+prettyEventMsg (HandShakeFailedAuth     msg e)  = show msg <> ": handshake failed authentication (zap status " <> show e <> ")"
 prettyEventMsg (UnknownEventMsg         msg)    = show msg
 
 foreign import ccall unsafe "dup"
