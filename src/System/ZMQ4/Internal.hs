@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 -- | /Warning/: This is an internal module and subject
 -- to change without notice.
@@ -70,7 +71,7 @@ import Data.IORef (IORef, mkWeakIORef, readIORef, atomicModifyIORef)
 
 import Foreign hiding (throwIfNull, void)
 import Foreign.C.String
-import Foreign.C.Types (CInt)
+import Foreign.C.Types (CInt(..))
 
 import Data.IORef (newIORef)
 import Data.Restricted
@@ -188,9 +189,12 @@ prettyEventMsg (HandShakeFailedProtocol msg e)  = show msg <> ": handshake faile
 prettyEventMsg (HandShakeFailedAuth     msg e)  = show msg <> ": handshake filled authentication (" <> show e <> ")"
 prettyEventMsg (UnknownEventMsg         msg)    = show msg
 
+foreign import ccall unsafe "dup"
+    dupFd :: CInt -> IO CInt
+
 showPeerAddr :: Fd -> String
 showPeerAddr fd = unsafePerformIO $ do
-   res :: Either SomeException NS.SockAddr <- try (NS.mkSocket (fromIntegral fd) >>= NS.getPeerName)
+   res :: Either SomeException NS.SockAddr <- try (dupFd (fromIntegral fd) >>= NS.mkSocket >>= NS.getPeerName)
    case res of
        (Right a) -> return $ show a
        (Left  _) -> return $ "fd " <> show fd
