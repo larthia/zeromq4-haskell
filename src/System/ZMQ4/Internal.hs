@@ -176,11 +176,11 @@ prettyEventMsg (ConnectDelayed          msg   ) = show msg <> ": connection dela
 prettyEventMsg (ConnectRetried          msg e)  = show msg <> ": connection retried (ms " <> show e <> ")"
 prettyEventMsg (Listening               msg fd) = show msg <> ": listening (fd " <> show fd <> ")"
 prettyEventMsg (BindFailed              msg e)  = show msg <> ": bind failed ("  <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
-prettyEventMsg (Accepted                msg fd) = show msg <> ": connection accepted (fd " <> showPeerAddr fd <> ")"
+prettyEventMsg (Accepted                msg fd) = show msg <> ": connection accepted (" <> showPeerAddr fd <> ")"
 prettyEventMsg (AcceptFailed            msg e)  = show msg <> ": accept failed (" <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
-prettyEventMsg (Closed                  msg fd) = show msg <> ": closed (fd " <> showPeerAddr fd <> ")"
+prettyEventMsg (Closed                  msg fd) = show msg <> ": closed (" <> showPeerAddr fd <> ")"
 prettyEventMsg (CloseFailed             msg e)  = show msg <> ": close failed (" <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
-prettyEventMsg (Disconnected            msg fd) = show msg <> ": disconnected (fd " <> showPeerAddr fd <> ")"
+prettyEventMsg (Disconnected            msg fd) = show msg <> ": disconnected (" <> showPeerAddr fd <> ")"
 prettyEventMsg (MonitorStopped          msg _)  = show msg <> ": monitor stopped"
 prettyEventMsg (HandShakeFailed         msg e)  = show msg <> ": handshake failed (error: " <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
 prettyEventMsg (HandShakeSucceeded      msg)    = show msg <> ": handshake succeeded"
@@ -193,7 +193,7 @@ showPeerAddr fd = unsafePerformIO $ do
    res :: Either SomeException NS.SockAddr <- try (NS.mkSocket (fromIntegral fd) >>= NS.getPeerName)
    case res of
        (Right a) -> return $ show a
-       (Left  x) -> return $ "fd " <> show fd <> ": " <> show x
+       (Left  _) -> return $ "fd " <> show fd
 {-# NOINLINE  showPeerAddr #-}
 
 data SecurityMechanism
