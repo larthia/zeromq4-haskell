@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | /Warning/: This is an internal module and subject
 -- to change without notice.
@@ -86,6 +87,7 @@ import qualified Data.ByteString.Unsafe as UB
 import System.IO.Unsafe ( unsafePerformIO )
 
 import qualified Network.Socket as NS
+import Control.Exception ( try, SomeException )
 
 type Timeout = Int64
 type Size    = Word
@@ -171,7 +173,7 @@ data EventMsg =
 prettyEventMsg :: EventMsg -> String
 prettyEventMsg (Connected               msg fd) = show msg <> ": connected (" <> showPeerAddr fd <> ")"
 prettyEventMsg (ConnectDelayed          msg   ) = show msg <> ": connection delayed"
-prettyEventMsg (ConnectRetried          msg e)  = show msg <> ": connection retried (" <> show e <> ")"
+prettyEventMsg (ConnectRetried          msg e)  = show msg <> ": connection retried (ms " <> show e <> ")"
 prettyEventMsg (Listening               msg fd) = show msg <> ": listening (fd " <> show fd <> ")"
 prettyEventMsg (BindFailed              msg e)  = show msg <> ": bind failed ("  <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
 prettyEventMsg (Accepted                msg fd) = show msg <> ": connection accepted (fd " <> showPeerAddr fd <> ")"
@@ -179,16 +181,19 @@ prettyEventMsg (AcceptFailed            msg e)  = show msg <> ": accept failed (
 prettyEventMsg (Closed                  msg fd) = show msg <> ": closed (fd " <> showPeerAddr fd <> ")"
 prettyEventMsg (CloseFailed             msg e)  = show msg <> ": close failed (" <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
 prettyEventMsg (Disconnected            msg fd) = show msg <> ": disconnected (fd " <> showPeerAddr fd <> ")"
-prettyEventMsg (MonitorStopped          msg e)  = show msg <> ": monitor stopped (" <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
-prettyEventMsg (HandShakeSucceeded      msg)    = show msg <> ": handshake succeeded"
+prettyEventMsg (MonitorStopped          msg _)  = show msg <> ": monitor stopped"
 prettyEventMsg (HandShakeFailed         msg e)  = show msg <> ": handshake failed (error: " <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
+prettyEventMsg (HandShakeSucceeded      msg)    = show msg <> ": handshake succeeded"
 prettyEventMsg (HandShakeFailedProtocol msg e)  = show msg <> ": handshake failed: " <> show e
 prettyEventMsg (HandShakeFailedAuth     msg e)  = show msg <> ": handshake filled authentication (" <> show e <> ")"
 prettyEventMsg (UnknownEventMsg         msg)    = show msg
 
 showPeerAddr :: Fd -> String
 showPeerAddr fd = unsafePerformIO $ do
-    NS.mkSocket (fromIntegral fd) >>= NS.getPeerName >>= \addr -> return $ show addr
+   res :: Either SomeException NS.SockAddr <- try (NS.mkSocket (fromIntegral fd) >>= NS.getPeerName)
+   case res of
+       (Right a) -> return $ show a
+       (Left  x) -> return $ "fd " <> show fd <> ": " <> show x
 {-# NOINLINE  showPeerAddr #-}
 
 data SecurityMechanism
