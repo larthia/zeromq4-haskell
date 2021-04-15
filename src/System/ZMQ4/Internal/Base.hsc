@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE ForeignFunctionInterface   #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
 
 -- | /Warning/: This is an internal module and subject
 -- to change without notice.
@@ -11,6 +12,7 @@ import Foreign.C.Types
 import Foreign.C.String
 import Control.Applicative
 import Prelude
+import qualified Data.ByteString as SB
 
 #include <zmq.h>
 
@@ -94,56 +96,87 @@ newtype ZMQOption = ZMQOption
   { optVal :: CInt
   } deriving (Eq, Ord)
 
+
 #{enum ZMQOption, ZMQOption
-  , affinity             = ZMQ_AFFINITY
-  , backlog              = ZMQ_BACKLOG
-  , conflate             = ZMQ_CONFLATE
-  , curve                = ZMQ_CURVE
-  , curvePublicKey       = ZMQ_CURVE_PUBLICKEY
-  , curveSecretKey       = ZMQ_CURVE_SECRETKEY
-  , curveServer          = ZMQ_CURVE_SERVER
-  , curveServerKey       = ZMQ_CURVE_SERVERKEY
-  , delayAttachOnConnect = ZMQ_DELAY_ATTACH_ON_CONNECT
-  , events               = ZMQ_EVENTS
-  , filedesc             = ZMQ_FD
-  , identity             = ZMQ_IDENTITY
-  , immediate            = ZMQ_IMMEDIATE
-  , ipv4Only             = ZMQ_IPV4ONLY
-  , ipv6                 = ZMQ_IPV6
-  , lastEndpoint         = ZMQ_LAST_ENDPOINT
-  , linger               = ZMQ_LINGER
-  , maxMessageSize       = ZMQ_MAXMSGSIZE
-  , mcastHops            = ZMQ_MULTICAST_HOPS
-  , mechanism            = ZMQ_MECHANISM
-  , null                 = ZMQ_NULL
-  , plain                = ZMQ_PLAIN
-  , plainPassword        = ZMQ_PLAIN_PASSWORD
-  , plainServer          = ZMQ_PLAIN_SERVER
-  , plainUserName        = ZMQ_PLAIN_USERNAME
-  , probeRouter          = ZMQ_PROBE_ROUTER
-  , rate                 = ZMQ_RATE
-  , receiveBuf           = ZMQ_RCVBUF
-  , receiveHighWM        = ZMQ_RCVHWM
-  , receiveMore          = ZMQ_RCVMORE
-  , receiveTimeout       = ZMQ_RCVTIMEO
-  , reconnectIVL         = ZMQ_RECONNECT_IVL
-  , reconnectIVLMax      = ZMQ_RECONNECT_IVL_MAX
-  , recoveryIVL          = ZMQ_RECOVERY_IVL
-  , reqCorrelate         = ZMQ_REQ_CORRELATE
-  , reqRelaxed           = ZMQ_REQ_RELAXED
-  , routerMandatory      = ZMQ_ROUTER_MANDATORY
-  , sendBuf              = ZMQ_SNDBUF
-  , sendHighWM           = ZMQ_SNDHWM
-  , sendTimeout          = ZMQ_SNDTIMEO
-  , subscribe            = ZMQ_SUBSCRIBE
-  , tcpAcceptFilter      = ZMQ_TCP_ACCEPT_FILTER
-  , tcpKeepAlive         = ZMQ_TCP_KEEPALIVE
-  , tcpKeepAliveCount    = ZMQ_TCP_KEEPALIVE_CNT
-  , tcpKeepAliveIdle     = ZMQ_TCP_KEEPALIVE_IDLE
-  , tcpKeepAliveInterval = ZMQ_TCP_KEEPALIVE_INTVL
-  , unsubscribe          = ZMQ_UNSUBSCRIBE
-  , xpubVerbose          = ZMQ_XPUB_VERBOSE
-  , zapDomain            = ZMQ_ZAP_DOMAIN
+  , affinity                       = ZMQ_AFFINITY
+  , backlog                        = ZMQ_BACKLOG
+  , bindToDevice                   = ZMQ_BINDTODEVICE
+  , conflate                       = ZMQ_CONFLATE
+  , connectRoutingID               = ZMQ_CONNECT_ROUTING_ID
+  , connectTimeout                 = ZMQ_CONNECT_TIMEOUT
+  , curve                          = ZMQ_CURVE
+  , curvePublicKey                 = ZMQ_CURVE_PUBLICKEY
+  , curveSecretKey                 = ZMQ_CURVE_SECRETKEY
+  , curveServer                    = ZMQ_CURVE_SERVER
+  , curveServerKey                 = ZMQ_CURVE_SERVERKEY
+  , delayAttachOnConnect           = ZMQ_DELAY_ATTACH_ON_CONNECT
+  , events                         = ZMQ_EVENTS
+  , filedesc                       = ZMQ_FD
+  , gssApiPlainText                = ZMQ_GSSAPI_PLAINTEXT
+  , gssApiPrincipal                = ZMQ_GSSAPI_PRINCIPAL
+  , gssApiPrincipalNametype        = ZMQ_GSSAPI_PRINCIPAL_NAMETYPE
+  , gssApiServer                   = ZMQ_GSSAPI_SERVER
+  , gssApiServicePrincipal         = ZMQ_GSSAPI_SERVICE_PRINCIPAL
+  , gssApiServicePrincipalNametype = ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE
+  , handshakeIVL                   = ZMQ_HANDSHAKE_IVL
+  , heartbeatIVL                   = ZMQ_HEARTBEAT_IVL
+  , heartbeatTimeout               = ZMQ_HEARTBEAT_TIMEOUT
+  , heartbeatTTL                   = ZMQ_HEARTBEAT_TTL
+  , identity                       = ZMQ_IDENTITY
+  , immediate                      = ZMQ_IMMEDIATE
+  , invertMatching                 = ZMQ_INVERT_MATCHING
+  , ipv4Only                       = ZMQ_IPV4ONLY
+  , ipv6                           = ZMQ_IPV6
+  , lastEndpoint                   = ZMQ_LAST_ENDPOINT
+  , linger                         = ZMQ_LINGER
+  , maxMessageSize                 = ZMQ_MAXMSGSIZE
+  , mcastHops                      = ZMQ_MULTICAST_HOPS
+  , mechanism                      = ZMQ_MECHANISM
+  , multicastMaxTPDU               = ZMQ_MULTICAST_MAXTPDU
+  , null                           = ZMQ_NULL
+  , plain                          = ZMQ_PLAIN
+  , plainPassword                  = ZMQ_PLAIN_PASSWORD
+  , plainServer                    = ZMQ_PLAIN_SERVER
+  , plainUserName                  = ZMQ_PLAIN_USERNAME
+  , probeRouter                    = ZMQ_PROBE_ROUTER
+  , rate                           = ZMQ_RATE
+  , receiveBuf                     = ZMQ_RCVBUF
+  , receiveHighWM                  = ZMQ_RCVHWM
+  , receiveMore                    = ZMQ_RCVMORE
+  , receiveTimeout                 = ZMQ_RCVTIMEO
+  , reconnectIVL                   = ZMQ_RECONNECT_IVL
+  , reconnectIVLMax                = ZMQ_RECONNECT_IVL_MAX
+  , recoveryIVL                    = ZMQ_RECOVERY_IVL
+  , reqCorrelate                   = ZMQ_REQ_CORRELATE
+  , reqRelaxed                     = ZMQ_REQ_RELAXED
+  , routerHandover                 = ZMQ_ROUTER_HANDOVER
+  , routerMandatory                = ZMQ_ROUTER_MANDATORY
+  , routerRaw                      = ZMQ_ROUTER_RAW
+  , routingID                      = ZMQ_ROUTING_ID
+  , sendBuf                        = ZMQ_SNDBUF
+  , sendHighWM                     = ZMQ_SNDHWM
+  , sendTimeout                    = ZMQ_SNDTIMEO
+  , socksProxy                     = ZMQ_SOCKS_PROXY
+  , streamNotify                   = ZMQ_STREAM_NOTIFY
+  , subscribe                      = ZMQ_SUBSCRIBE
+  , tcpAcceptFilter                = ZMQ_TCP_ACCEPT_FILTER
+  , tcpKeepAlive                   = ZMQ_TCP_KEEPALIVE
+  , tcpKeepAliveCount              = ZMQ_TCP_KEEPALIVE_CNT
+  , tcpKeepAliveIdle               = ZMQ_TCP_KEEPALIVE_IDLE
+  , tcpKeepAliveInterval           = ZMQ_TCP_KEEPALIVE_INTVL
+  , tcpMaxRT                       = ZMQ_TCP_MAXRT
+  , tos                            = ZMQ_TOS
+  , unsubscribe                    = ZMQ_UNSUBSCRIBE
+  , vmciBufferMaxSize              = ZMQ_VMCI_BUFFER_MAX_SIZE
+  , vmciBufferMinSize              = ZMQ_VMCI_BUFFER_MIN_SIZE
+  , vmciBufferSize                 = ZMQ_VMCI_BUFFER_SIZE
+  , vmciConnectTimeout             = ZMQ_VMCI_CONNECT_TIMEOUT
+  , xpubManual                     = ZMQ_XPUB_MANUAL
+  , xpubNoDrop                     = ZMQ_XPUB_NODROP
+  , xpubVerbose                    = ZMQ_XPUB_VERBOSE
+  , xpubVerboser                   = ZMQ_XPUB_VERBOSER
+  , xpubWelcomeMsg                 = ZMQ_XPUB_WELCOME_MSG
+  , zapDomain                      = ZMQ_ZAP_DOMAIN
 }
 
 -----------------------------------------------------------------------------
@@ -178,7 +211,44 @@ newtype ZMQEventType = ZMQEventType
   , disconnected   = ZMQ_EVENT_DISCONNECTED
   , allEvents      = ZMQ_EVENT_ALL
   , monitorStopped = ZMQ_EVENT_MONITOR_STOPPED
+  , handshakeFailed = ZMQ_EVENT_HANDSHAKE_FAILED_NO_DETAIL
+  , handshakeSucceeded = ZMQ_EVENT_HANDSHAKE_SUCCEEDED
+  , handshakeFailedProtocol = ZMQ_EVENT_HANDSHAKE_FAILED_PROTOCOL
+  , handshakeFailedAuth  = ZMQ_EVENT_HANDSHAKE_FAILED_AUTH
 }
+
+newtype ZMQProtocolError = ZMQProtocolError
+  { errorVal :: Word32
+  } deriving (Eq, Ord, Show, Storable)
+
+#{enum ZMQProtocolError, ZMQProtocolError
+  , errorZmtpUnspecified                  = ZMQ_PROTOCOL_ERROR_ZMTP_UNSPECIFIED
+  , errorZmtpUnexpectedCommand            = ZMQ_PROTOCOL_ERROR_ZMTP_UNEXPECTED_COMMAND
+  , errorZmtpInvalidSequence              = ZMQ_PROTOCOL_ERROR_ZMTP_INVALID_SEQUENCE
+  , errorZmtpKeyExchange                  = ZMQ_PROTOCOL_ERROR_ZMTP_KEY_EXCHANGE
+  , errorZmtpMalformedCommandUnspecified  = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_UNSPECIFIED
+  , errorZmtpMalformedCommandMessage      = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_MESSAGE
+  , errorZmtpMalformedCommandHello        = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_HELLO
+  , errorZmtpMalformedCommandInitiate     = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_INITIATE
+  , errorZmtpMalformedCommandError        = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_ERROR
+  , errorZmtpMalformedCommandReady        = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_READY
+  , errorZmtpMalformedCommandWelcome      = ZMQ_PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_WELCOME
+  , errorZmtpInvalidMetadata              = ZMQ_PROTOCOL_ERROR_ZMTP_INVALID_METADATA
+  , errorZmtpCryptographic                = ZMQ_PROTOCOL_ERROR_ZMTP_CRYPTOGRAPHIC
+  , errorZmtpMechanismMismatch            = ZMQ_PROTOCOL_ERROR_ZMTP_MECHANISM_MISMATCH
+  , errorZapUnspecified                   = ZMQ_PROTOCOL_ERROR_ZAP_UNSPECIFIED
+  , errorZapMalformedReply                = ZMQ_PROTOCOL_ERROR_ZAP_MALFORMED_REPLY
+  , errorZapBadRequestId                  = ZMQ_PROTOCOL_ERROR_ZAP_BAD_REQUEST_ID
+  , errorZapBadVersion                    = ZMQ_PROTOCOL_ERROR_ZAP_BAD_VERSION
+  , errorZapInvalidStatusCode             = ZMQ_PROTOCOL_ERROR_ZAP_INVALID_STATUS_CODE
+  , errorZapInvalidMetadata               = ZMQ_PROTOCOL_ERROR_ZAP_INVALID_METADATA
+}
+
+propertyRoutingID, propertySocketType, propertyUserId, propertyPeerAddress  :: SB.ByteString
+propertyRoutingID   = "Routing-Id"
+propertySocketType  = "Socket-Type"
+propertyUserId      = "User-Id"
+propertyPeerAddress = "Peer-Address"
 
 -----------------------------------------------------------------------------
 -- Event
@@ -306,6 +376,15 @@ foreign import ccall unsafe "zmq.h zmq_msg_get"
 foreign import ccall unsafe "zmq.h zmq_msg_set"
     c_zmq_msg_set :: ZMQMsgPtr -> CInt -> CInt -> IO CInt
 
+foreign import ccall unsafe "zmq.h zmq_msg_gets"
+    c_zmq_msg_gets :: ZMQMsgPtr -> Ptr CChar -> IO (Ptr CChar)
+
+-- foreign import ccall unsafe "zmq.h zmq_msg_set_routing_id"
+--     c_zmq_msg_set_routing_id :: ZMQMsgPtr -> CUInt -> IO CInt
+--
+-- foreign import ccall unsafe "zmq.h zmq_msg_routing_id"
+--     c_zmq_msg_routing_id :: ZMQMsgPtr -> IO CUInt
+
 -- socket
 
 foreign import ccall unsafe "zmq.h zmq_socket"
@@ -387,4 +466,3 @@ foreign import ccall unsafe "zmq.h zmq_z85_decode"
 
 foreign import ccall unsafe "zmq.h zmq_curve_keypair"
     c_zmq_curve_keypair :: CString -> CString -> IO CInt
-

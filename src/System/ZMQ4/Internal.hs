@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 -- | /Warning/: This is an internal module and subject
 -- to change without notice.
@@ -53,6 +55,8 @@ module System.ZMQ4.Internal
     , fromSwitch
     , events2cint
     , eventMessage
+    , prettyEventMsg
+    , protocolError
 
     , toMechanism
     , fromMechanism
@@ -67,7 +71,7 @@ import Data.IORef (IORef, mkWeakIORef, readIORef, atomicModifyIORef)
 
 import Foreign hiding (throwIfNull, void)
 import Foreign.C.String
-import Foreign.C.Types (CInt)
+import Foreign.C.Types (CInt(..))
 
 import Data.IORef (newIORef)
 import Data.Restricted
@@ -81,6 +85,10 @@ import System.ZMQ4.Internal.Error
 import qualified Data.ByteString        as SB
 import qualified Data.ByteString.Lazy   as LB
 import qualified Data.ByteString.Unsafe as UB
+import System.IO.Unsafe ( unsafePerformIO )
+
+import qualified Network.Socket as NS
+import Control.Exception ( try, SomeException )
 
 type Timeout = Int64
 type Size    = Word
@@ -111,23 +119,86 @@ data EventType =
   | CloseFailedEvent
   | DisconnectedEvent
   | MonitorStoppedEvent
+  | HandshakeFailed
+  | HandshakeSucceeded
+  | HandshakeFailedProtocol
+  | HandshakeFailedAuth
   | AllEvents
   deriving (Eq, Ord, Show)
 
+-- | Protocol Error types.
+data ProtocolError =
+     ErrorZmtpUnspecified
+   | ErrorZmtpUnexpectedCommand
+   | ErrorZmtpInvalidSequence
+   | ErrorZmtpKeyExchange
+   | ErrorZmtpMalformedCommandUnspecified
+   | ErrorZmtpMalformedCommandMessage
+   | ErrorZmtpMalformedCommandHello
+   | ErrorZmtpMalformedCommandInitiate
+   | ErrorZmtpMalformedCommandError
+   | ErrorZmtpMalformedCommandReady
+   | ErrorZmtpMalformedCommandWelcome
+   | ErrorZmtpInvalidMetadata
+   | ErrorZmtpCryptographic
+   | ErrorZmtpMechanismMismatch
+   | ErrorZapUnspecified
+   | ErrorZapMalformedReply
+   | ErrorZapBadRequestId
+   | ErrorZapBadVersion
+   | ErrorZapInvalidStatusCode
+   | ErrorZapInvalidMetadata
+   | ErrorUnknown
+    deriving (Eq, Ord, Show)
+
 -- | Event Message to receive when monitoring socket events.
 data EventMsg =
-    Connected      !SB.ByteString !Fd
-  | ConnectDelayed !SB.ByteString
-  | ConnectRetried !SB.ByteString !Int
-  | Listening      !SB.ByteString !Fd
-  | BindFailed     !SB.ByteString !Int
-  | Accepted       !SB.ByteString !Fd
-  | AcceptFailed   !SB.ByteString !Int
-  | Closed         !SB.ByteString !Fd
-  | CloseFailed    !SB.ByteString !Int
-  | Disconnected   !SB.ByteString !Fd
-  | MonitorStopped !SB.ByteString !Int
+    Connected               !SB.ByteString !Fd
+  | ConnectDelayed          !SB.ByteString
+  | ConnectRetried          !SB.ByteString !Int
+  | Listening               !SB.ByteString !Fd
+  | BindFailed              !SB.ByteString !Int
+  | Accepted                !SB.ByteString !Fd
+  | AcceptFailed            !SB.ByteString !Int
+  | Closed                  !SB.ByteString !Fd
+  | CloseFailed             !SB.ByteString !Int
+  | Disconnected            !SB.ByteString !Fd
+  | MonitorStopped          !SB.ByteString !Int
+  | HandShakeSucceeded      !SB.ByteString
+  | HandShakeFailed         !SB.ByteString !Int
+  | HandShakeFailedProtocol !SB.ByteString ProtocolError
+  | HandShakeFailedAuth     !SB.ByteString !Int
+  | UnknownEventMsg         !SB.ByteString
   deriving (Eq, Show)
+
+prettyEventMsg :: EventMsg -> String
+prettyEventMsg (Connected               msg fd) = show msg <> ": connected (" <> showPeerAddr fd <> ")"
+prettyEventMsg (ConnectDelayed          msg   ) = show msg <> ": connection delayed"
+prettyEventMsg (ConnectRetried          msg e)  = show msg <> ": connection retried (ms " <> show e <> ")"
+prettyEventMsg (Listening               msg fd) = show msg <> ": listening (fd " <> show fd <> ")"
+prettyEventMsg (BindFailed              msg e)  = show msg <> ": bind failed ("  <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
+prettyEventMsg (Accepted                msg fd) = show msg <> ": connection accepted (" <> showPeerAddr fd <> ")"
+prettyEventMsg (AcceptFailed            msg e)  = show msg <> ": accept failed (" <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
+prettyEventMsg (Closed                  msg fd) = show msg <> ": closed (" <> showPeerAddr fd <> ")"
+prettyEventMsg (CloseFailed             msg e)  = show msg <> ": close failed (" <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
+prettyEventMsg (Disconnected            msg fd) = show msg <> ": disconnected (" <> showPeerAddr fd <> ")"
+prettyEventMsg (MonitorStopped          msg _)  = show msg <> ": monitor stopped"
+prettyEventMsg (HandShakeFailed         msg e)  = show msg <> ": handshake failed (error: " <> (unsafePerformIO.zmqErrnoMessage) (fromIntegral e) <> ")"
+prettyEventMsg (HandShakeSucceeded      msg)    = show msg <> ": handshake succeeded"
+prettyEventMsg (HandShakeFailedProtocol msg e)  = show msg <> ": handshake failed: " <> show e
+prettyEventMsg (HandShakeFailedAuth     msg e)  = show msg <> ": handshake failed authentication (zap status " <> show e <> ")"
+prettyEventMsg (UnknownEventMsg         msg)    = show msg
+
+foreign import ccall unsafe "dup"
+    dupFd :: CInt -> IO CInt
+
+showPeerAddr :: Fd -> String
+showPeerAddr fd = unsafePerformIO $ do
+   res :: Either SomeException NS.SockAddr <- try (dupFd (fromIntegral fd) >>= NS.mkSocket >>= NS.getPeerName)
+   case res of
+       (Right a) -> return $ "fd " <> show fd <> ": " <> show a
+       (Left  _) -> return $ "fd " <> show fd
+{-# NOINLINE  showPeerAddr #-}
 
 data SecurityMechanism
   = Null
@@ -353,6 +424,10 @@ toZMQEventType ClosedEvent         = closed
 toZMQEventType CloseFailedEvent    = closeFailed
 toZMQEventType DisconnectedEvent   = disconnected
 toZMQEventType MonitorStoppedEvent = monitorStopped
+toZMQEventType HandshakeFailed         = handshakeFailed
+toZMQEventType HandshakeSucceeded      = handshakeSucceeded
+toZMQEventType HandshakeFailedProtocol = handshakeFailedProtocol
+toZMQEventType HandshakeFailedAuth     = handshakeFailedAuth
 
 toMechanism :: SecurityMechanism -> ZMQSecMechanism
 toMechanism Null  = secNull
@@ -371,15 +446,44 @@ events2cint = fromIntegral . foldr ((.|.) . eventTypeVal . toZMQEventType) 0
 
 eventMessage :: SB.ByteString -> ZMQEvent -> EventMsg
 eventMessage str (ZMQEvent e v)
-    | e == connected      = Connected      str (Fd . fromIntegral $ v)
-    | e == connectDelayed = ConnectDelayed str
-    | e == connectRetried = ConnectRetried str (fromIntegral $ v)
-    | e == listening      = Listening      str (Fd . fromIntegral $ v)
-    | e == bindFailed     = BindFailed     str (fromIntegral $ v)
-    | e == accepted       = Accepted       str (Fd . fromIntegral $ v)
-    | e == acceptFailed   = AcceptFailed   str (fromIntegral $ v)
-    | e == closed         = Closed         str (Fd . fromIntegral $ v)
-    | e == closeFailed    = CloseFailed    str (fromIntegral $ v)
-    | e == disconnected   = Disconnected   str (fromIntegral $ v)
-    | e == monitorStopped = MonitorStopped str (fromIntegral $ v)
-    | otherwise           = error $ "unknown event type: " ++ show e
+    | e == connected               = Connected      str (Fd . fromIntegral $ v)
+    | e == connectDelayed          = ConnectDelayed str
+    | e == connectRetried          = ConnectRetried str (fromIntegral $ v)
+    | e == listening               = Listening      str (Fd . fromIntegral $ v)
+    | e == bindFailed              = BindFailed     str (fromIntegral $ v)
+    | e == accepted                = Accepted       str (Fd . fromIntegral $ v)
+    | e == acceptFailed            = AcceptFailed   str (fromIntegral $ v)
+    | e == closed                  = Closed         str (Fd . fromIntegral $ v)
+    | e == closeFailed             = CloseFailed    str (fromIntegral $ v)
+    | e == disconnected            = Disconnected   str (fromIntegral $ v)
+    | e == monitorStopped          = MonitorStopped str (fromIntegral $ v)
+    | e == handshakeFailed         = HandShakeFailed str (fromIntegral $ v)
+    | e == handshakeSucceeded      = HandShakeSucceeded str
+    | e == handshakeFailedProtocol = HandShakeFailedProtocol str (protocolError (ZMQProtocolError $ fromIntegral v))
+    | e == handshakeFailedAuth     = HandShakeFailedAuth str (fromIntegral $ v)
+    | otherwise                    = UnknownEventMsg str
+
+
+protocolError :: ZMQProtocolError  -> ProtocolError
+protocolError e
+    | e == errorZmtpUnspecified                 =  ErrorZmtpUnspecified
+    | e == errorZmtpUnexpectedCommand           =  ErrorZmtpUnexpectedCommand
+    | e == errorZmtpInvalidSequence             =  ErrorZmtpInvalidSequence
+    | e == errorZmtpKeyExchange                 =  ErrorZmtpKeyExchange
+    | e == errorZmtpMalformedCommandUnspecified =  ErrorZmtpMalformedCommandUnspecified
+    | e == errorZmtpMalformedCommandMessage     =  ErrorZmtpMalformedCommandMessage
+    | e == errorZmtpMalformedCommandHello       =  ErrorZmtpMalformedCommandHello
+    | e == errorZmtpMalformedCommandInitiate    =  ErrorZmtpMalformedCommandInitiate
+    | e == errorZmtpMalformedCommandError       =  ErrorZmtpMalformedCommandError
+    | e == errorZmtpMalformedCommandReady       =  ErrorZmtpMalformedCommandReady
+    | e == errorZmtpMalformedCommandWelcome     =  ErrorZmtpMalformedCommandWelcome
+    | e == errorZmtpInvalidMetadata             =  ErrorZmtpInvalidMetadata
+    | e == errorZmtpCryptographic               =  ErrorZmtpCryptographic
+    | e == errorZmtpMechanismMismatch           =  ErrorZmtpMechanismMismatch
+    | e == errorZapUnspecified                  =  ErrorZapUnspecified
+    | e == errorZapMalformedReply               =  ErrorZapMalformedReply
+    | e == errorZapBadRequestId                 =  ErrorZapBadRequestId
+    | e == errorZapBadVersion                   =  ErrorZapBadVersion
+    | e == errorZapInvalidStatusCode            =  ErrorZapInvalidStatusCode
+    | e == errorZapInvalidMetadata              =  ErrorZapInvalidMetadata
+    | otherwise                                 =  ErrorUnknown

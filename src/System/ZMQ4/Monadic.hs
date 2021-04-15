@@ -77,6 +77,7 @@ module System.ZMQ4.Monadic
   , send'
   , sendMulti
   , receive
+  , receive'
   , receiveMulti
   , subscribe
   , unsubscribe
@@ -350,6 +351,9 @@ sendMulti s = liftIO . Z.sendMulti (_unsocket s)
 
 receive :: Z.Receiver t => Socket z t -> ZMQ z ByteString
 receive = liftIO . Z.receive . _unsocket
+
+receive' :: Z.Receiver t => Socket z t -> [ByteString] -> ZMQ z (ByteString, [Maybe ByteString])
+receive' s = liftIO . Z.receive' (_unsocket s)
 
 receiveMulti :: Z.Receiver t => Socket z t -> ZMQ z [ByteString]
 receiveMulti = liftIO . Z.receiveMulti . _unsocket
