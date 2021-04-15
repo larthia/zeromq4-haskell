@@ -29,6 +29,7 @@ module Data.Restricted (
   , rvalue
 
   , Nneg1
+  , N2
   , N1
   , N0
   , N254
@@ -39,6 +40,7 @@ module Data.Restricted (
 ) where
 
 import Data.Int
+import Data.Word
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 
@@ -72,6 +74,9 @@ data N0
 -- | type-level   1
 data N1
 
+-- | type-level   2
+data N2
+
 -- | type-level 254
 data N254
 
@@ -87,6 +92,7 @@ data Div5
 instance Show Nneg1 where show _ = "Nneg1"
 instance Show N0    where show _ = "N0"
 instance Show N1    where show _ = "N1"
+instance Show N2    where show _ = "N2"
 instance Show N254  where show _ = "N254"
 instance Show Inf   where show _ = "Inf"
 instance Show Div4  where show _ = "Div4"
@@ -119,6 +125,14 @@ instance (Integral a) => Restriction (N1, Int32) a where
 instance (Integral a) => Restriction (N1, Int64) a where
     toRestricted = toIntR 1 (maxBound :: Int64)
     restrict     = intR   1 (maxBound :: Int64)
+
+instance (Integral a) => Restriction (N1, Word64) a where
+    toRestricted = toIntR 1 (maxBound :: Word64)
+    restrict     = intR   1 (maxBound :: Word64)
+
+instance (Integral a) => Restriction (N0, N2) a where
+    toRestricted = toIntR 0 (2 :: Int32)
+    restrict     = intR   0 (2 :: Int32)
 
 -- From -1 ranges
 
@@ -214,4 +228,3 @@ fitByRem r s =
     in if x == 0
         then Restricted s
         else Restricted (B.take (len - x) s)
-
