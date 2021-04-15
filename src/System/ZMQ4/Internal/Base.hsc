@@ -175,7 +175,7 @@ newtype ZMQOption = ZMQOption
   , xpubNoDrop                     = ZMQ_XPUB_NODROP
   , xpubVerbose                    = ZMQ_XPUB_VERBOSE
   , xpubVerboser                   = ZMQ_XPUB_VERBOSER
-  , xpubWelcomeMSG                 = ZMQ_XPUB_WELCOME_MSG
+  , xpubWelcomeMsg                 = ZMQ_XPUB_WELCOME_MSG
   , zapDomain                      = ZMQ_ZAP_DOMAIN
 }
 
