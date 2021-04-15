@@ -106,14 +106,27 @@ module System.ZMQ4
   , System.ZMQ4.backlog
   , System.ZMQ4.bindToDevice
   , System.ZMQ4.conflate
+  , System.ZMQ4.connectRoutingID
+  , System.ZMQ4.connectTimeout
   , System.ZMQ4.curvePublicKey
   , System.ZMQ4.curveSecretKey
   , System.ZMQ4.curveServerKey
   , System.ZMQ4.delayAttachOnConnect
   , System.ZMQ4.events
   , System.ZMQ4.fileDescriptor
+  , System.ZMQ4.gssApiPlainText
+  , System.ZMQ4.gssApiPrincipal
+  , System.ZMQ4.gssApiPrincipalNametype
+  , System.ZMQ4.gssApiServer
+  , System.ZMQ4.gssApiServicePrincipal
+  , System.ZMQ4.gssApiServicePrincipalNametype
+  , System.ZMQ4.handshakeIvl
+  , System.ZMQ4.heartbeatIvl
+  , System.ZMQ4.heartbeatTimeout
+  , System.ZMQ4.heartbeatTtl
   , System.ZMQ4.identity
   , System.ZMQ4.immediate
+  , System.ZMQ4.invertMatching
   , System.ZMQ4.ipv4Only
   , System.ZMQ4.ipv6
   , System.ZMQ4.lastEndpoint
@@ -122,8 +135,9 @@ module System.ZMQ4
   , System.ZMQ4.mcastHops
   , System.ZMQ4.mechanism
   , System.ZMQ4.moreToReceive
-  , System.ZMQ4.plainServer
+  , System.ZMQ4.multicastMaxTpdu
   , System.ZMQ4.plainPassword
+  , System.ZMQ4.plainServer
   , System.ZMQ4.plainUserName
   , System.ZMQ4.rate
   , System.ZMQ4.receiveBuffer
@@ -132,13 +146,28 @@ module System.ZMQ4
   , System.ZMQ4.reconnectInterval
   , System.ZMQ4.reconnectIntervalMax
   , System.ZMQ4.recoveryInterval
+  , System.ZMQ4.routerHandover
+  , System.ZMQ4.routerRaw
+  , System.ZMQ4.routingID
   , System.ZMQ4.sendBuffer
   , System.ZMQ4.sendHighWM
   , System.ZMQ4.sendTimeout
+  , System.ZMQ4.socksProxy
+  , System.ZMQ4.streamNotify
   , System.ZMQ4.tcpKeepAlive
   , System.ZMQ4.tcpKeepAliveCount
   , System.ZMQ4.tcpKeepAliveIdle
   , System.ZMQ4.tcpKeepAliveInterval
+  , System.ZMQ4.tcpMaxRT
+  , System.ZMQ4.tos
+  , System.ZMQ4.vmciBufferMaxSize
+  , System.ZMQ4.vmciBufferMinSize
+  , System.ZMQ4.vmciBufferSize
+  , System.ZMQ4.vmciConnectTimeout
+  , System.ZMQ4.xPubManual
+  , System.ZMQ4.xPubNoDrop
+  , System.ZMQ4.xPubVerboser
+  , System.ZMQ4.xPubWelcomeMsg
   , System.ZMQ4.zapDomain
 
   , propertyRoutingID
@@ -151,20 +180,34 @@ module System.ZMQ4
   , setBacklog
   , setBindToDevice
   , setConflate
-  , setCurveServer
+  , setConnectRoutingID
+  , setConnectTimeout
   , setCurvePublicKey
   , setCurveSecretKey
+  , setCurveServer
   , setCurveServerKey
   , setDelayAttachOnConnect
+  , setGssApiPlainText
+  , setGssAPIPrincipal
+  , setGssApiPrincipalNametype
+  , setGssApiServer
+  , setGssAPIServicePrincipal
+  , setGssApiServicePrincipalNametype
+  , setHandshakeIvl
+  , setHeartbeatIvl
+  , setHeartbeatTimeout
+  , setHeartbeatTtl
   , setIdentity
   , setImmediate
+  , setInvertMatching
   , setIpv4Only
   , setIpv6
   , setLinger
   , setMaxMessageSize
   , setMcastHops
-  , setPlainServer
+  , setMulticastMaxTpdu
   , setPlainPassword
+  , setPlainServer
   , setPlainUserName
   , setProbeRouter
   , setRate
@@ -176,16 +219,31 @@ module System.ZMQ4
   , setRecoveryInterval
   , setReqCorrelate
   , setReqRelaxed
+  , setRouterHandover
   , setRouterMandatory
+  , setRouterRaw
+  , setRoutingID
   , setSendBuffer
   , setSendHighWM
   , setSendTimeout
+  , setSocksProxy
+  , setStreamNotify
   , setTcpAcceptFilter
   , setTcpKeepAlive
   , setTcpKeepAliveCount
   , setTcpKeepAliveIdle
   , setTcpKeepAliveInterval
+  , setTcpMaxRT
+  , setTos
+  , setVmciBufferMaxSize
+  , setVmciBufferMinSize
+  , setVmciBufferSize
+  , setVmciConnectTimeout
+  , setXPubManual
+  , setXPubNoDrop
   , setXPubVerbose
+  , setXPubVerboser
+  , setXPubWelcomeMsg
   , setZapDomain
 
     -- * Restrictions
@@ -649,6 +707,246 @@ setIpv6 x s = setIntOpt s B.ipv6 (bool2cint x)
 -- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_PLAIN_SERVER>.
 setPlainServer :: Bool -> Socket a -> IO ()
 setPlainServer x s = setIntOpt s B.plainServer (bool2cint x)
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_BINDTODEVICE>.
+setBindToDevice :: Restricted (N1, N254) SB.ByteString -> Socket a -> IO ()
+setBindToDevice x s = setByteStringOpt s B.bindToDevice (rvalue x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_BINDTODEVICE>.
+bindToDevice :: Socket a -> IO SB.ByteString
+bindToDevice s = getByteStringOpt s B.bindToDevice
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_CONNECT_ROUTING_ID>.
+setConnectRoutingID :: Restricted (N1, N254) SB.ByteString -> Socket a -> IO ()
+setConnectRoutingID x s = setByteStringOpt s B.connectRoutingID (rvalue x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_CONNECT_ROUTING_ID>.
+connectRoutingID :: Socket a -> IO SB.ByteString
+connectRoutingID s = getByteStringOpt s B.connectRoutingID
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_GSSAPI_PRINCIPAL>.
+setGssAPIPrincipal :: Restricted (N1, N254) SB.ByteString -> Socket a -> IO ()
+setGssAPIPrincipal x s = setByteStringOpt s B.gssApiPrincipal (rvalue x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_GSSAPI_PRINCIPAL>.
+gssApiPrincipal :: Socket a -> IO SB.ByteString
+gssApiPrincipal s = getByteStringOpt s B.gssApiPrincipal
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_GSSAPI_SERVICE_PRINCIPAL>.
+setGssAPIServicePrincipal :: Restricted (N1, N254) SB.ByteString -> Socket a -> IO ()
+setGssAPIServicePrincipal x s = setByteStringOpt s B.gssApiServicePrincipal (rvalue x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_GSSAPI_SERVICE_PRINCIPAL>.
+gssApiServicePrincipal :: Socket a -> IO SB.ByteString
+gssApiServicePrincipal s = getByteStringOpt s B.gssApiServicePrincipal
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_ROUTING_ID>.
+setRoutingID :: Restricted (N1, N254) SB.ByteString -> Socket a -> IO ()
+setRoutingID x s = setByteStringOpt s B.routingID (rvalue x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_ROUTING_ID>.
+routingID :: Socket a -> IO SB.ByteString
+routingID s = getByteStringOpt s B.routingID
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_SOCKS_PROXY>.
+setSocksProxy :: Restricted (N1, N254) SB.ByteString -> Socket a -> IO ()
+setSocksProxy x s = setByteStringOpt s B.socksProxy (rvalue x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_SOCKS_PROXY>.
+socksProxy :: Socket a -> IO SB.ByteString
+socksProxy s = getByteStringOpt s B.socksProxy
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_XPUB_WELCOME_MSG>.
+setXPubWelcomeMsg :: Restricted (N1, N254) SB.ByteString -> Socket a -> IO ()
+setXPubWelcomeMsg x s = setByteStringOpt s B.xpubWelcomeMsg (rvalue x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_XPUB_WELCOME_MSG>.
+xPubWelcomeMsg :: Socket a -> IO SB.ByteString
+xPubWelcomeMsg s = getByteStringOpt s B.xpubWelcomeMsg
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_GSSAPI_PLAINTEXT>.
+setGssApiPlainText :: Bool -> Socket a -> IO ()
+setGssApiPlainText x s = setIntOpt s B.gssApiPlainText (bool2cint x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_GSSAPI_PLAINTEXT>.
+gssApiPlainText :: Socket a -> IO Bool
+gssApiPlainText = fmap (== 1) . getInt32Option B.gssApiPlainText
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_GSSAPI_SERVER>.
+setGssApiServer :: Bool -> Socket a -> IO ()
+setGssApiServer x s = setIntOpt s B.gssApiServer (bool2cint x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_GSSAPI_SERVER>.
+gssApiServer :: Socket a -> IO Bool
+gssApiServer = fmap (== 1) . getInt32Option B.gssApiServer
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_INVERT_MATCHING>.
+setInvertMatching :: Bool -> Socket a -> IO ()
+setInvertMatching x s = setIntOpt s B.invertMatching (bool2cint x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_INVERT_MATCHING>.
+invertMatching :: Socket a -> IO Bool
+invertMatching = fmap (== 1) . getInt32Option B.invertMatching
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_ROUTER_HANDOVER>.
+setRouterHandover :: Bool -> Socket a -> IO ()
+setRouterHandover x s = setIntOpt s B.routerHandover (bool2cint x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_ROUTER_HANDOVER>.
+routerHandover :: Socket a -> IO Bool
+routerHandover = fmap (== 1) . getInt32Option B.routerHandover
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_ROUTER_RAW>.
+setRouterRaw :: Bool -> Socket a -> IO ()
+setRouterRaw x s = setIntOpt s B.routerRaw (bool2cint x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_ROUTER_RAW>.
+routerRaw :: Socket a -> IO Bool
+routerRaw = fmap (== 1) . getInt32Option B.routerRaw
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_STREAM_NOTIFY>.
+setStreamNotify :: Bool -> Socket a -> IO ()
+setStreamNotify x s = setIntOpt s B.streamNotify (bool2cint x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_STREAM_NOTIFY>.
+streamNotify :: Socket a -> IO Bool
+streamNotify = fmap (== 1) . getInt32Option B.streamNotify
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_XPUB_MANUAL>.
+setXPubManual :: Bool -> Socket a -> IO ()
+setXPubManual x s = setIntOpt s B.xpubManual (bool2cint x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_XPUB_MANUAL>.
+xPubManual:: Socket a -> IO Bool
+xPubManual = fmap (== 1) . getInt32Option B.xpubManual
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_XPUB_NODROP>.
+setXPubNoDrop :: Bool -> Socket a -> IO ()
+setXPubNoDrop x s = setIntOpt s B.xpubNoDrop  (bool2cint x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_XPUB_NODROP>.
+xPubNoDrop :: Socket a -> IO Bool
+xPubNoDrop = fmap (== 1) . getInt32Option B.xpubNoDrop
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_XPUB_VERBOSER>.
+setXPubVerboser :: Bool -> Socket a -> IO ()
+setXPubVerboser x s = setIntOpt s B.xpubVerboser (bool2cint x)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_XPUB_VERBOSER>.
+xPubVerboser:: Socket a -> IO Bool
+xPubVerboser = fmap (== 1) . getInt32Option B.xpubVerboser
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_CONNECT_TIMEOUT>.
+setConnectTimeout :: Integral i => Restricted (N0, Int32) i -> Socket a -> IO ()
+setConnectTimeout = setInt32OptFromRestricted B.connectTimeout
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_CONNECT_TIMEOUT>.
+connectTimeout :: Socket a -> IO Int
+connectTimeout = getInt32Option B.connectTimeout
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_HANDSHAKE_IVL>.
+setHandshakeIvl :: Integral i => Restricted (N0, Int32) i -> Socket a -> IO ()
+setHandshakeIvl = setInt32OptFromRestricted B.handshakeIVL
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_HANDSHAKE_IVL>.
+handshakeIvl :: Socket a -> IO Int
+handshakeIvl = getInt32Option B.handshakeIVL
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_HEARTBEAT_IVL>.
+setHeartbeatIvl :: Integral i => Restricted (N0, Int32) i -> Socket a -> IO ()
+setHeartbeatIvl = setInt32OptFromRestricted B.heartbeatIVL
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_HEARTBEAT_IVL>.
+heartbeatIvl :: Socket a -> IO Int
+heartbeatIvl = getInt32Option B.heartbeatIVL
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_HEARTBEAT_TIMEOUT>.
+setHeartbeatTimeout :: Integral i => Restricted (N0, Int32) i -> Socket a -> IO ()
+setHeartbeatTimeout = setInt32OptFromRestricted B.heartbeatTimeout
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_HEARTBEAT_TIMEOUT>.
+heartbeatTimeout :: Socket a -> IO Int
+heartbeatTimeout = getInt32Option B.heartbeatTimeout
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_HEARTBEAT_TTL>.
+setHeartbeatTtl :: Integral i => Restricted (N0, Int32) i -> Socket a -> IO ()
+setHeartbeatTtl = setInt32OptFromRestricted B.heartbeatTTL
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_HEARTBEAT_TTL>.
+heartbeatTtl :: Socket a -> IO Int
+heartbeatTtl = getInt32Option B.heartbeatTTL
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_MULTICAST_MAXTPDU>.
+setMulticastMaxTpdu :: Integral i => Restricted (N0, Int32) i -> Socket a -> IO ()
+setMulticastMaxTpdu = setInt32OptFromRestricted B.multicastMaxTPDU
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_MULTICAST_MAXTPDU>.
+multicastMaxTpdu :: Socket a -> IO Int
+multicastMaxTpdu = getInt32Option B.multicastMaxTPDU
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_TCP_MAXRT>.
+setTcpMaxRT :: Integral i => Restricted (N0, Int32) i -> Socket a -> IO ()
+setTcpMaxRT = setInt32OptFromRestricted B.tcpMaxRT
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_TCP_MAXRT>.
+tcpMaxRT :: Socket a -> IO Int
+tcpMaxRT = getInt32Option B.tcpMaxRT
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_TOS>.
+setTos :: Integral i => Restricted (N0, Int32) i -> Socket a -> IO ()
+setTos = setInt32OptFromRestricted B.tos
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_TOS>.
+tos :: Socket a -> IO Int
+tos = getInt32Option B.tos
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_VMCI_CONNECT_TIMEOUT>.
+setVmciConnectTimeout :: Integral i => Restricted (Nneg1, Int32) i -> Socket a -> IO ()
+setVmciConnectTimeout = setInt32OptFromRestricted B.vmciConnectTimeout
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_VMCI_CONNECT_TIMEOUT>.
+vmciConnectTimeout :: Socket a -> IO Int
+vmciConnectTimeout  = getInt32Option B.vmciConnectTimeout
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_GSSAPI_PRINCIPAL_MAMETYPE>.
+setGssApiPrincipalNametype :: Integral i => Restricted (N0, N2) i -> Socket a -> IO ()
+setGssApiPrincipalNametype = setInt32OptFromRestricted B.gssApiPrincipalNametype
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_GSSAPI_PRINCIPAL_NAMETYPE>.
+gssApiPrincipalNametype :: Socket a -> IO Int
+gssApiPrincipalNametype = getInt32Option B.gssApiPrincipalNametype
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_GSSAPI_SERVICE_PRINCIPAL_MAMETYPE>.
+setGssApiServicePrincipalNametype :: Integral i => Restricted (N0, N2) i -> Socket a -> IO ()
+setGssApiServicePrincipalNametype = setInt32OptFromRestricted B.gssApiServicePrincipalNametype
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE>.
+gssApiServicePrincipalNametype :: Socket a -> IO Int
+gssApiServicePrincipalNametype = getInt32Option B.gssApiServicePrincipalNametype
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_VMCI_BUFFER_MAX_SIZE>.
+setVmciBufferMaxSize :: Integral i => Restricted (N1, Word64) i -> Socket a -> IO ()
+setVmciBufferMaxSize x s = setIntOpt s B.vmciBufferMaxSize ((fromIntegral . rvalue $ x) :: Word64)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_VMCI_BUFFER_MAX_SIZE>.
+vmciBufferMaxSize :: Socket a -> IO Int
+vmciBufferMaxSize s = getIntOpt s B.vmciBufferMaxSize 0
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_VMCI_BUFFER_MIN_SIZE>.
+setVmciBufferMinSize :: Integral i => Restricted (N1, Word64) i -> Socket a -> IO ()
+setVmciBufferMinSize x s = setIntOpt s B.vmciBufferMinSize ((fromIntegral . rvalue $ x) :: Word64)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_VMCI_BUFFER_MIN_SIZE>.
+vmciBufferMinSize :: Socket a -> IO Int
+vmciBufferMinSize s = getIntOpt s B.vmciBufferMinSize 0
+
+-- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_VMCI_BUFFER_SIZE>.
+setVmciBufferSize :: Integral i => Restricted (N1, Word64) i -> Socket a -> IO ()
+setVmciBufferSize x s = setIntOpt s B.vmciBufferSize ((fromIntegral . rvalue $ x) :: Word64)
+
+-- | <http://api.zeromq.org/4-3:zmq-getsockopt zmq_getsockopt ZMQ_VMCI_BUFFER_SIZE>.
+vmciBufferSize :: Socket a -> IO Int
+vmciBufferSize s = getIntOpt s B.vmciBufferSize 0
 
 -- | <http://api.zeromq.org/4-3:zmq-setsockopt zmq_setsockopt ZMQ_CURVE_SERVER>.
 setCurveServer :: Bool -> Socket a -> IO ()
